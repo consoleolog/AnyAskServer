@@ -1,18 +1,26 @@
 package com.consoleolog.anyaskapiserver.v1.controller;
 
 
+import com.consoleolog.anyaskapiserver.v1.model.dto.ChatRequest;
+import com.consoleolog.anyaskapiserver.v1.model.dto.ChatRoomDto;
+import com.consoleolog.anyaskapiserver.v1.model.dto.UserPrincipal;
+import com.consoleolog.anyaskapiserver.v1.model.entity.ChatRoom;
+import com.consoleolog.anyaskapiserver.v1.service.ChatService;
 import com.consoleolog.anyaskapiserver.v1.service.RagService;
+
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.chat.client.ChatClient;
-import org.springframework.ai.chat.model.ChatResponse;
+
+
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
-import reactor.core.publisher.Flux;
 
-import java.io.IOException;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -20,7 +28,7 @@ import java.util.Objects;
 
 @Slf4j
 @RequiredArgsConstructor
-@RequestMapping("/v1/api/chat")
+@RequestMapping("/api/v1/chat")
 @RestController
 public class ChatController {
 
@@ -28,50 +36,69 @@ public class ChatController {
 
     private final ChatClient chatClient;
 
+    private final ChatService chatService;
+
+    @GetMapping("/")
+    public ResponseEntity<Map<String, Object>> getUser(){
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        log.debug(auth.getName());
+
+        UserPrincipal user = (UserPrincipal) auth.getPrincipal();
+
+        log.debug(user.getUserId());
+
+        return ResponseEntity.ok(Map.of("user", user));
+    }
+
+
     @PostMapping("/")
-    public ChatClient.StreamResponseSpec simpleChat(
-            @RequestPart("content") @Nullable String content,
-            @RequestPart("file") @Nullable MultipartFile file) {
+    public Map<String, Object> chatRooms(@RequestBody Map<String, Object> data){
+        log.debug(data.toString());
 
-        log.debug(content);
+        ChatRoomDto chatRoomDto = new ChatRoomDto();
+        chatRoomDto.setRoomUserId(data.get("roomUserId").toString());
 
-        return chatClient.prompt().user(Objects.requireNonNull(content)).stream();
+        log.debug(chatRoomDto.toString());
+        List<ChatRoom> chatRooms = chatService.getAllChatRooms(chatRoomDto);
+        return Map.of("chatRooms", chatRooms);
+    }
+
+    @PostMapping("/save-ai-msg")
+    public void aiResponse(@RequestBody ChatRequest chatRequest){
+
+        chatService.saveAiResponse(chatRequest);
+
+    }
+
+    @GetMapping("/rooms")
+    public ResponseEntity<List<ChatRoom>> getAllChatRooms(){
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+
+        log.debug(auth.getName());
+
+        UserPrincipal user = (UserPrincipal) auth.getPrincipal();
+
+        log.debug(user.toString());
+        ChatRoomDto chatRoomDto = ChatRoomDto.builder()
+                .roomUserId(user.getUserId())
+                .build();
+        return ResponseEntity.status(HttpStatus.OK).body(chatService.getAllChatRooms(chatRoomDto));
     }
 
     @PostMapping("/stream")
-    public Flux<ChatResponse> chatWithStream(@RequestPart("content") @Nullable String content,
-                                             @RequestPart("file") @Nullable MultipartFile file){
+    public ResponseEntity<?> chatWithStream(
+            @RequestPart("content") @Nullable String content,
+            @RequestPart("file") @Nullable MultipartFile file,
+            @RequestPart("userId") @Nullable String userId){
 
-        return chatClient.prompt()
-                .user(Objects.requireNonNull(content))
-                .stream()
-                .chatResponse();
+        ChatRequest chatRequestDto = ChatRequest.create(content, file, userId);
+
+        String result = chatService.getResponse(chatRequestDto);
+
+
+        return ResponseEntity.status(HttpStatus.OK).body(Map.of("msg", result));
     }
 
-    @PostMapping("/sse")
-    public SseEmitter seeChat(
-            @RequestPart("content") String content,
-            @RequestPart("file") @Nullable MultipartFile file) {
 
-
-        SseEmitter emitter = new SseEmitter();
-
-        // 비동기 처리로 이벤트를 전송
-        new Thread(() -> {
-            try {
-                ragService.createVectorStore(file);
-                emitter.send(Map.of("message", "success"));
-                emitter.complete(); // 전송 완료 후 emitter를 종료
-            } catch (IOException e) {
-                log.warn("UnstructuredLoader File Error : {} ", e.getMessage());
-                try {
-                    emitter.send(Map.of("message", e.getMessage()));
-                } catch (IOException ex) {
-                    emitter.completeWithError(ex); // 오류 처리
-                }
-            }
-        }).start();
-
-        return emitter;
-    }
 }

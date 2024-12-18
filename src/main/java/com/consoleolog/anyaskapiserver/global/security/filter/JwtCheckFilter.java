@@ -1,31 +1,31 @@
-package com.consoleolog.anyaskapiserver.global.security.filter;
-
-import com.consoleolog.anyaskapiserver.v1.model.dto.UserPrincipal;
-import com.consoleolog.anyaskapiserver.v1.util.CommonUtil;
-import com.consoleolog.anyaskapiserver.v1.util.CookieUtils;
-import com.consoleolog.anyaskapiserver.v1.util.JwtProvider;
-import io.jsonwebtoken.Claims;
-import jakarta.servlet.FilterChain;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.web.filter.OncePerRequestFilter;
-
-import java.io.IOException;
-import java.util.Date;
-import java.util.Optional;
-
-@Slf4j
-@RequiredArgsConstructor
-public class JwtCheckFilter extends OncePerRequestFilter {
-
-    private final JwtProvider jwtProvider;
-
-    @Override
-    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+//package com.consoleolog.anyaskapiserver.global.security.filter;
+//
+//import com.consoleolog.anyaskapiserver.v1.model.dto.UserPrincipal;
+//import com.consoleolog.anyaskapiserver.v1.util.CommonUtil;
+//import com.consoleolog.anyaskapiserver.v1.util.CookieUtils;
+//import com.consoleolog.anyaskapiserver.v1.util.JwtProvider;
+//import io.jsonwebtoken.Claims;
+//import jakarta.servlet.FilterChain;
+//import jakarta.servlet.ServletException;
+//import jakarta.servlet.http.Cookie;
+//import jakarta.servlet.http.HttpServletRequest;
+//import jakarta.servlet.http.HttpServletResponse;
+//import lombok.RequiredArgsConstructor;
+//import lombok.extern.slf4j.Slf4j;
+//import org.springframework.web.filter.OncePerRequestFilter;
+//
+//import java.io.IOException;
+//import java.util.Date;
+//import java.util.Optional;
+//
+//@Slf4j
+//@RequiredArgsConstructor
+//public class JwtCheckFilter extends OncePerRequestFilter {
+//
+//    private final JwtProvider jwtProvider;
+//
+//    @Override
+//    protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
 //        log.debug("------------------------- jwt check filter ------------------------");
 //
 //        Optional<Cookie> accessTokenOptional = CookieUtils.getCookie(request, "access_token");
@@ -67,24 +67,24 @@ public class JwtCheckFilter extends OncePerRequestFilter {
 //            }
 //            filterChain.doFilter(request, response);
 //        }
-        filterChain.doFilter(request, response);
-    }
-
-    private Boolean checkTime(Long exp){
-        Date expDate = new Date(exp * 1000);
-        long gap = expDate.getTime() - System.currentTimeMillis();
-        long leftMin = gap / (1000 * 60);
-        return leftMin < 10;
-    }
-
-    private Boolean validToken(String token){
-        try {
-            jwtProvider.extractToken(token);
-        } catch (Exception e) {
-            return true;
-        }
-        return false;
-    }
-
-
-}
+//        filterChain.doFilter(request, response);
+//    }
+//
+//    private Boolean checkTime(Long exp){
+//        Date expDate = new Date(exp * 1000);
+//        long gap = expDate.getTime() - System.currentTimeMillis();
+//        long leftMin = gap / (1000 * 60);
+//        return leftMin < 10;
+//    }
+//
+//    private Boolean validToken(String token){
+//        try {
+//            jwtProvider.extractToken(token);
+//        } catch (Exception e) {
+//            return true;
+//        }
+//        return false;
+//    }
+//
+//
+//}

@@ -22,6 +22,14 @@ public class ChatRoomDto {
 
     private LocalDateTime createdAt;
 
-
+    public ChatRoom toEntity(ChatRoomDto chatRoomDto) {
+        return ChatRoom.builder()
+                .crId(chatRoomDto.getCrId())
+                .roomName(chatRoomDto.getRoomName())
+                .roomUserId(chatRoomDto.getRoomUserId())
+                .useYn(chatRoomDto.getUseYn())
+                .createdAt(chatRoomDto.getCreatedAt())
+                .build();
+    }
 
 }

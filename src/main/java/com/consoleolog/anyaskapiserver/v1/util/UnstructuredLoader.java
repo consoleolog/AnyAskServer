@@ -1,11 +1,11 @@
 package com.consoleolog.anyaskapiserver.v1.util;
 
 import com.consoleolog.anyaskapiserver.global.error.exception.BaseException;
-import com.consoleolog.anyaskapiserver.global.error.exception.ValidationException;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.ai.document.Document;
+import org.springframework.ai.transformer.splitter.TokenTextSplitter;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.FileSystemResource;
@@ -113,7 +113,7 @@ public class UnstructuredLoader {
 
         ObjectMapper objMapper = new ObjectMapper();
 
-        return Objects.requireNonNull(results).stream().map(result ->
+        List<Document> documents = Objects.requireNonNull(results).stream().map(result ->
                 {
                     try {
                         Object metadataObj = result.get("metadata");
@@ -122,15 +122,12 @@ public class UnstructuredLoader {
                         return new Document(objMapper.writeValueAsString(result.get("text")).replace("\n", ""), metadata);
                     } catch (JsonProcessingException e) {
                         log.warn("UnstructuredLoader Error : {}", e.getMessage());
-                        throw new UnstructuredLoaderException("objMapper.writeValueAsString(result.get(\"text\")) Error");
+                        throw new BaseException("objMapper.writeValueAsString(result.get(\"text\")) Error");
                     }
                 }).toList();
-    }
+        TokenTextSplitter splitter = new TokenTextSplitter(1000, 400, 20, 500, true);
 
-    class UnstructuredLoaderException extends ValidationException {
-        public UnstructuredLoaderException(String message) {
-            super(message);
-        }
+        return splitter.apply(documents);
     }
 
 }

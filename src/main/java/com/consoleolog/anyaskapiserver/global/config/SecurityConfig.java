@@ -1,12 +1,14 @@
 package com.consoleolog.anyaskapiserver.global.config;
 
-import com.consoleolog.anyaskapiserver.global.security.filter.JwtCheckFilter;
+//import com.consoleolog.anyaskapiserver.global.security.filter.JwtCheckFilter;
 import com.consoleolog.anyaskapiserver.global.security.handler.CustomAccessDeniedHandler;
 import com.consoleolog.anyaskapiserver.global.security.handler.CustomAuthenticationFailHandler;
 import com.consoleolog.anyaskapiserver.global.security.handler.CustomAuthenticationSuccessHandler;
+import com.consoleolog.anyaskapiserver.global.security.handler.CustomLogoutSuccessHandler;
 import com.consoleolog.anyaskapiserver.v1.service.impl.CustomOAuth2UserServiceImpl;
 import com.consoleolog.anyaskapiserver.v1.util.JwtProvider;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -18,7 +20,20 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.ExceptionTranslationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
+import java.util.Arrays;
+import java.util.List;
+
+/**
+ * @FileName		: SecurityConfig.java
+ * @Author			: ACR
+ * @Date			: 24. 12. 18.
+ * @Description		: 최초 생성
+ **/
+@Slf4j
 @RequiredArgsConstructor
 @Configuration
 @EnableWebSecurity
@@ -32,13 +47,21 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
+        log.debug("=====================");
+        log.debug("   SecurityConfig    ");
+        log.debug("=====================");
+
         http.authorizeHttpRequests(request-> request.requestMatchers("/**").permitAll());
 
-        http.cors(AbstractHttpConfigurer::disable);
+        http.csrf(AbstractHttpConfigurer::disable);
+
+        http.cors(cors->cors.configurationSource(corsConfigurationSource()));
 
         http.sessionManagement(session->session.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
-        http.addFilterBefore(jwtCheckFilter(), ExceptionTranslationFilter.class);
+        http.exceptionHandling(exception -> exception.accessDeniedHandler(accessDeniedHandler()));
+
+//        http.addFilterBefore(jwtCheckFilter(), ExceptionTranslationFilter.class);
 
         http.oauth2Login(oauth2->{
             oauth2.loginPage("http://localhost:8501/");
@@ -55,9 +78,12 @@ public class SecurityConfig {
             form.failureHandler(authenticationFailHandler());
         });
 
-        http.exceptionHandling(exception->{
-            exception.accessDeniedHandler(accessDeniedHandler());
+        http.logout(logout->{
+            logout.logoutUrl("/api/v1/logout");
+            logout.logoutSuccessHandler(logoutSuccessHandler());
+            logout.deleteCookies("access_token", "refresh_token");
         });
+
 
         return http.build();
     }
@@ -81,10 +107,10 @@ public class SecurityConfig {
     /*
     * JwtCheckFilter
     * */
-    @Bean
-    public JwtCheckFilter jwtCheckFilter(){
-        return new JwtCheckFilter(jwtProvider());
-    }
+//    @Bean
+//    public JwtCheckFilter jwtCheckFilter(){
+//        return new JwtCheckFilter(jwtProvider());
+//    }
 
     /*
     * LoginSuccessHandler
@@ -103,6 +129,14 @@ public class SecurityConfig {
     }
 
     /*
+    * LogoutSuccessHandler
+    * */
+    @Bean
+    public CustomLogoutSuccessHandler logoutSuccessHandler(){
+        return new CustomLogoutSuccessHandler();
+    }
+
+    /*
     * AccessDeniedHandler
     * */
     @Bean
@@ -110,5 +144,21 @@ public class SecurityConfig {
         return new CustomAccessDeniedHandler();
     }
 
+    /*
+    * CorsConfig
+    * */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource(){
+        CorsConfiguration corsConfiguration = new CorsConfiguration();
+
+        corsConfiguration.setAllowedOriginPatterns(List.of("*"));
+        corsConfiguration.setAllowedMethods(Arrays.asList("GET", "POST", "PUT", "DELETE", "OPTIONS"));
+        corsConfiguration.setAllowedHeaders(Arrays.asList("Authorization", "Cache-Control", "Content-Type"));
+        corsConfiguration.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", corsConfiguration);
+        return source;
+    }
 
 }

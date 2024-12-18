@@ -26,13 +26,13 @@ public class CustomOAuth2UserServiceImpl extends DefaultOAuth2UserService {
     @Override
     public OAuth2User loadUser(OAuth2UserRequest userRequest) throws OAuth2AuthenticationException {
 
-        log.debug("--------------------- oauth service -----------------------");
+        log.debug("[CustomOAuth2UserServiceImpl] :: start ");
 
         OAuth2User oAuth2User = super.loadUser(userRequest);
+        log.debug("[CustomOAuth2UserServiceImpl] :: oAuth2User : {}", oAuth2User);
 
         OAuth2UserInfo userInfo = new KakaoUserInfo(oAuth2User.getAttributes());
-
-        log.debug(userInfo.toString());
+        log.debug("[CustomOAuth2UserServiceImpl] :: userInfo : {}", userInfo);
 
         Optional<Member> memberOptional = memberRepository.findByUserEmail(userInfo.getUserEmail());
 
@@ -40,6 +40,7 @@ public class CustomOAuth2UserServiceImpl extends DefaultOAuth2UserService {
 
         if (memberOptional.isPresent()) {
             member = memberOptional.get();
+            log.debug("[CustomOAuth2UserServiceImpl] :: member : {}", member);
             return UserPrincipal.create(member, oAuth2User.getAttributes());
         } else {
             member = Member.builder()
@@ -50,6 +51,7 @@ public class CustomOAuth2UserServiceImpl extends DefaultOAuth2UserService {
                     .lastLoginAt(LocalDateTime.now())
                     .build();
             Member savedMember = memberRepository.save(member);
+            log.debug("[CustomOAuth2UserServiceImpl] :: member : {}", savedMember);
             return UserPrincipal.create(savedMember, oAuth2User.getAttributes());
         }
     }

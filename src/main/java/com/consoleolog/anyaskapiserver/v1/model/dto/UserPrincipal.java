@@ -3,6 +3,7 @@ package com.consoleolog.anyaskapiserver.v1.model.dto;
 import com.consoleolog.anyaskapiserver.v1.model.entity.Member;
 import lombok.Getter;
 import lombok.Setter;
+import lombok.ToString;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -11,7 +12,7 @@ import org.springframework.security.oauth2.core.user.OAuth2User;
 import java.time.LocalDateTime;
 import java.util.*;
 
-
+@ToString
 @Getter
 public class UserPrincipal implements OAuth2User, UserDetails {
 
